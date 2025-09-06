@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 50px; }
+        .form-group { margin: 10px 0; }
+        label { display: block; margin-bottom: 5px; }
+        input { padding: 8px; width: 200px; }
+        button { padding: 10px 20px; margin: 10px 0; }
+        .result { margin-top: 20px; padding: 10px; border: 1px solid #ccc; display: none; }
+    </style>
+</head>
+<body>
+    <h1>登录功能测试</h1>
+    
+    <div class="form-group">
+        <label for="username">用户名:</label>
+        <input type="text" id="username" name="username" placeholder="请输入用户名" value="admin">
+    </div>
+    
+    <div class="form-group">
+        <label for="password">密码:</label>
+        <input type="password" id="password" name="password" placeholder="请输入密码" value="admin123">
+    </div>
+    
+    <button onclick="testLogin()">测试登录</button>
+    <button onclick="testAPI()">测试API</button>
+    
+    <div id="result" class="result"></div>
+
+    <script>
+        async function testLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                console.log('开始测试登录...');
+                const response = await fetch('http://localhost:3001/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                console.log('登录响应:', data);
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = '<h3>登录成功!</h3><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                    resultDiv.style.display = 'block';
+                    resultDiv.style.backgroundColor = '#d4edda';
+                    
+                    // 保存token
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                } else {
+                    resultDiv.innerHTML = '<h3>登录失败!</h3><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                    resultDiv.style.display = 'block';
+                    resultDiv.style.backgroundColor = '#f8d7da';
+                }
+            } catch (error) {
+                console.error('登录错误:', error);
+                resultDiv.innerHTML = '<h3>网络错误!</h3><pre>' + error.message + '</pre>';
+                resultDiv.style.display = 'block';
+                resultDiv.style.backgroundColor = '#f8d7da';
+            }
+        }
+        
+        async function testAPI() {
+            const token = localStorage.getItem('token');
+            const resultDiv = document.getElementById('result');
+            
+            if (!token) {
+                resultDiv.innerHTML = '<h3>请先登录!</h3>';
+                resultDiv.style.display = 'block';
+                resultDiv.style.backgroundColor = '#fff3cd';
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:3001/api/customers', {
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+                
+                const data = await response.json();
+                console.log('API响应:', data);
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = '<h3>API测试成功!</h3><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                    resultDiv.style.display = 'block';
+                    resultDiv.style.backgroundColor = '#d4edda';
+                } else {
+                    resultDiv.innerHTML = '<h3>API测试失败!</h3><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                    resultDiv.style.display = 'block';
+                    resultDiv.style.backgroundColor = '#f8d7da';
+                }
+            } catch (error) {
+                console.error('API错误:', error);
+                resultDiv.innerHTML = '<h3>API网络错误!</h3><pre>' + error.message + '</pre>';
+                resultDiv.style.display = 'block';
+                resultDiv.style.backgroundColor = '#f8d7da';
+            }
+        }
+    </script>
+</body>
+</html>
