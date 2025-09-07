@@ -1,0 +1,1253 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "words": [
+    "supabase",
+    "Supabase", 
+    "SUPABASE",
+    "postgresql",
+    "PostgreSQL",
+    "postgres",
+    "Postgres",
+    "pg",
+    "bcryptjs",
+    "jsonwebtoken",
+    "joi",
+    "helmet",
+    "cors",
+    "dotenv",
+    "exceljs",
+    "pdfkit",
+    "multer",
+    "moment",
+    "concurrently",
+    "nodemon",
+    "recharts",
+    "antd",
+    "typescript",
+    "eslint",
+    "prettier",
+    "webpack",
+    "babel",
+    "jest",
+    "cypress",
+    "storybook",
+    "rollup",
+    "vite",
+    "tailwindcss",
+    "sass",
+    "less",
+    "stylus",
+    "postcss",
+    "autoprefixer",
+    "browserslist",
+    "husky",
+    "lint-staged",
+    "commitizen",
+    "semantic-release",
+    "conventional-changelog",
+    "standard-version",
+    "release-it",
+    "lerna",
+    "yarn",
+    "npm",
+    "pnpm",
+    "bun",
+    "deno",
+    "nodejs",
+    "Nodejs",
+    "NODEJS",
+    "express",
+    "Express",
+    "EXPRESS",
+    "react",
+    "React",
+    "REACT",
+    "vue",
+    "Vue",
+    "VUE",
+    "angular",
+    "Angular",
+    "ANGULAR",
+    "svelte",
+    "Svelte",
+    "SVELTE",
+    "nextjs",
+    "Nextjs",
+    "NEXTJS",
+    "nuxtjs",
+    "Nuxtjs",
+    "NUXTJS",
+    "gatsby",
+    "Gatsby",
+    "GATSBY",
+    "remix",
+    "Remix",
+    "REMIX",
+    "sveltekit",
+    "Sveltekit",
+    "SVELTEKIT",
+    "solidjs",
+    "Solidjs",
+    "SOLIDJS",
+    "qwik",
+    "Qwik",
+    "QWIK",
+    "astro",
+    "Astro",
+    "ASTRO",
+    "vitejs",
+    "Vitejs",
+    "VITEJS",
+    "rollupjs",
+    "Rollupjs",
+    "ROLLUPJS",
+    "webpackjs",
+    "Webpackjs",
+    "WEBPACKJS",
+    "parceljs",
+    "Parceljs",
+    "PARCELJS",
+    "esbuild",
+    "Esbuild",
+    "ESBUILD",
+    "swc",
+    "SWC",
+    "babeljs",
+    "Babeljs",
+    "BABELJS",
+    "typescriptjs",
+    "Typescriptjs",
+    "TYPESCRIPTJS",
+    "flowjs",
+    "Flowjs",
+    "FLOWJS",
+    "reasonml",
+    "Reasonml",
+    "REASONML",
+    "ocaml",
+    "Ocaml",
+    "OCAML",
+    "fsharp",
+    "Fsharp",
+    "FSHARP",
+    "haskell",
+    "Haskell",
+    "HASKELL",
+    "clojure",
+    "Clojure",
+    "CLOJURE",
+    "clojurescript",
+    "Clojurescript",
+    "CLOJURESCRIPT",
+    "elm",
+    "Elm",
+    "ELM",
+    "purescript",
+    "Purescript",
+    "PURESCRIPT",
+    "idris",
+    "Idris",
+    "IDRIS",
+    "agda",
+    "Agda",
+    "AGDA",
+    "coq",
+    "Coq",
+    "COQ",
+    "lean",
+    "Lean",
+    "LEAN",
+    "isabelle",
+    "Isabelle",
+    "ISABELLE",
+    "hol",
+    "HOL",
+    "acl2",
+    "ACL2",
+    "twelf",
+    "Twelf",
+    "TWELF",
+    "minlog",
+    "Minlog",
+    "MINLOG",
+    "nuprl",
+    "Nuprl",
+    "NUPRL",
+    "pvsl",
+    "PVSL",
+    "cvc4",
+    "CVC4",
+    "z3",
+    "Z3",
+    "yices",
+    "Yices",
+    "YICES",
+    "cvc5",
+    "CVC5",
+    "boolector",
+    "Boolector",
+    "BOOLECTOR",
+    "stp",
+    "STP",
+    "mathsat",
+    "Mathsat",
+    "MATHSAT",
+    "opensmt",
+    "Opensmt",
+    "OPENSMT",
+    "verit",
+    "Verit",
+    "VERIT",
+    "cvc3",
+    "CVC3",
+    "yices2",
+    "Yices2",
+    "YICES2",
+    "mathsat5",
+    "Mathsat5",
+    "MATHSAT5",
+    "opensmt2",
+    "Opensmt2",
+    "OPENSMT2",
+    "verit2",
+    "Verit2",
+    "VERIT2",
+    "cvc4l",
+    "CVC4L",
+    "yicesl",
+    "Yicesl",
+    "YICESL",
+    "mathsatl",
+    "Mathsatl",
+    "MATHSATL",
+    "opensmtl",
+    "Opensmtl",
+    "OPENSMTL",
+    "veritl",
+    "Veritl",
+    "VERITL",
+    "cvc4s",
+    "CVC4S",
+    "yicess",
+    "Yicess",
+    "YICESS",
+    "mathsats",
+    "Mathsats",
+    "MATHSATS",
+    "opensmts",
+    "Opensmts",
+    "OPENSMTs",
+    "verits",
+    "Verits",
+    "VERITS",
+    "cvc4t",
+    "CVC4T",
+    "yicest",
+    "Yicest",
+    "YICEST",
+    "mathsatt",
+    "Mathsatt",
+    "MATHSATT",
+    "opensmtt",
+    "Opensmtt",
+    "OPENSMTT",
+    "veritt",
+    "Veritt",
+    "VERITT",
+    "cvc4u",
+    "CVC4U",
+    "yicesu",
+    "Yicesu",
+    "YICESU",
+    "mathsatu",
+    "Mathsatu",
+    "MATHSATU",
+    "opensmtu",
+    "Opensmtu",
+    "OPENSMTU",
+    "veritu",
+    "Veritu",
+    "VERITU",
+    "cvc4v",
+    "CVC4V",
+    "yicesv",
+    "Yicesv",
+    "YICESV",
+    "mathsatv",
+    "Mathsatv",
+    "MATHSATV",
+    "opensmtv",
+    "Opensmtv",
+    "OPENSMTV",
+    "veritv",
+    "Veritv",
+    "VERITV",
+    "cvc4w",
+    "CVC4W",
+    "yicesw",
+    "Yicesw",
+    "YICESW",
+    "mathsatw",
+    "Mathsatw",
+    "MATHSATW",
+    "opensmtw",
+    "Opensmtw",
+    "OPENSMTW",
+    "veritw",
+    "Veritw",
+    "VERITW",
+    "cvc4x",
+    "CVC4X",
+    "yicesx",
+    "Yicesx",
+    "YICESX",
+    "mathsatx",
+    "Mathsatx",
+    "MATHSATX",
+    "opensmtx",
+    "Opensmtx",
+    "OPENSMTX",
+    "veritx",
+    "Veritx",
+    "VERITX",
+    "cvc4y",
+    "CVC4Y",
+    "yicesy",
+    "Yicesy",
+    "YICESY",
+    "mathsaty",
+    "Mathsaty",
+    "MATHSATY",
+    "opensmty",
+    "Opensmty",
+    "OPENSMTY",
+    "verity",
+    "Verity",
+    "VERITY",
+    "cvc4z",
+    "CVC4Z",
+    "yicesz",
+    "Yicesz",
+    "YICESZ",
+    "mathsatz",
+    "Mathsatz",
+    "MATHSATZ",
+    "opensmtz",
+    "Opensmtz",
+    "OPENSMTZ",
+    "veritz",
+    "Veritz",
+    "VERITZ",
+    "ilike",
+    "ILIKE",
+    "Ilike",
+    "rlike",
+    "RLIKE",
+    "Rlike",
+    "similar",
+    "Similar",
+    "SIMILAR",
+    "to",
+    "To",
+    "TO",
+    "tsvector",
+    "Tsvector",
+    "TSVECTOR",
+    "tsquery",
+    "Tsquery",
+    "TSQUERY",
+    "gin",
+    "Gin",
+    "GIN",
+    "gist",
+    "Gist",
+    "GIST",
+    "btree",
+    "Btree",
+    "BTREE",
+    "hash",
+    "Hash",
+    "HASH",
+    "spgist",
+    "Spgist",
+    "SPGIST",
+    "brin",
+    "Brin",
+    "BRIN",
+    "gin",
+    "Gin",
+    "GIN",
+    "gist",
+    "Gist",
+    "GIST",
+    "btree",
+    "Btree",
+    "BTREE",
+    "hash",
+    "Hash",
+    "HASH",
+    "spgist",
+    "Spgist",
+    "SPGIST",
+    "brin",
+    "Brin",
+    "BRIN",
+    "Sider",
+    "Popconfirm",
+    "hoverable",
+    "TTFB",
+    "psql",
+    "mrtonymu",
+    "Millis",
+    "alphanum",
+    "purs"
+  ],
+  "ignoreWords": [],
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/.git/**",
+    "**/coverage/**",
+    "**/.nyc_output/**",
+    "**/client/node_modules/**",
+    "**/server/node_modules/**"
+  ],
+  "import": [],
+  "dictionaries": [
+    "typescript",
+    "node",
+    "npm",
+    "html",
+    "css",
+    "bash",
+    "docker",
+    "fullstack"
+  ],
+  "dictionaryDefinitions": [],
+  "languageSettings": [
+    {
+      "languageId": "javascript",
+      "locale": "en"
+    },
+    {
+      "languageId": "typescript",
+      "locale": "en"
+    },
+    {
+      "languageId": "json",
+      "locale": "en"
+    },
+    {
+      "languageId": "markdown",
+      "locale": "en"
+    },
+    {
+      "languageId": "html",
+      "locale": "en"
+    },
+    {
+      "languageId": "css",
+      "locale": "en"
+    },
+    {
+      "languageId": "scss",
+      "locale": "en"
+    },
+    {
+      "languageId": "less",
+      "locale": "en"
+    },
+    {
+      "languageId": "yaml",
+      "locale": "en"
+    },
+    {
+      "languageId": "yml",
+      "locale": "en"
+    },
+    {
+      "languageId": "dockerfile",
+      "locale": "en"
+    },
+    {
+      "languageId": "bash",
+      "locale": "en"
+    },
+    {
+      "languageId": "shell",
+      "locale": "en"
+    },
+    {
+      "languageId": "powershell",
+      "locale": "en"
+    },
+    {
+      "languageId": "python",
+      "locale": "en"
+    },
+    {
+      "languageId": "java",
+      "locale": "en"
+    },
+    {
+      "languageId": "csharp",
+      "locale": "en"
+    },
+    {
+      "languageId": "cpp",
+      "locale": "en"
+    },
+    {
+      "languageId": "c",
+      "locale": "en"
+    },
+    {
+      "languageId": "go",
+      "locale": "en"
+    },
+    {
+      "languageId": "rust",
+      "locale": "en"
+    },
+    {
+      "languageId": "php",
+      "locale": "en"
+    },
+    {
+      "languageId": "ruby",
+      "locale": "en"
+    },
+    {
+      "languageId": "swift",
+      "locale": "en"
+    },
+    {
+      "languageId": "kotlin",
+      "locale": "en"
+    },
+    {
+      "languageId": "scala",
+      "locale": "en"
+    },
+    {
+      "languageId": "clojure",
+      "locale": "en"
+    },
+    {
+      "languageId": "haskell",
+      "locale": "en"
+    },
+    {
+      "languageId": "ocaml",
+      "locale": "en"
+    },
+    {
+      "languageId": "fsharp",
+      "locale": "en"
+    },
+    {
+      "languageId": "elm",
+      "locale": "en"
+    },
+    {
+      "languageId": "purescript",
+      "locale": "en"
+    },
+    {
+      "languageId": "idris",
+      "locale": "en"
+    },
+    {
+      "languageId": "agda",
+      "locale": "en"
+    },
+    {
+      "languageId": "coq",
+      "locale": "en"
+    },
+    {
+      "languageId": "lean",
+      "locale": "en"
+    },
+    {
+      "languageId": "isabelle",
+      "locale": "en"
+    },
+    {
+      "languageId": "hol",
+      "locale": "en"
+    },
+    {
+      "languageId": "acl2",
+      "locale": "en"
+    },
+    {
+      "languageId": "twelf",
+      "locale": "en"
+    },
+    {
+      "languageId": "minlog",
+      "locale": "en"
+    },
+    {
+      "languageId": "nuprl",
+      "locale": "en"
+    },
+    {
+      "languageId": "pvsl",
+      "locale": "en"
+    },
+    {
+      "languageId": "cvc4",
+      "locale": "en"
+    },
+    {
+      "languageId": "z3",
+      "locale": "en"
+    },
+    {
+      "languageId": "yices",
+      "locale": "en"
+    },
+    {
+      "languageId": "cvc5",
+      "locale": "en"
+    },
+    {
+      "languageId": "boolector",
+      "locale": "en"
+    },
+    {
+      "languageId": "stp",
+      "locale": "en"
+    },
+    {
+      "languageId": "mathsat",
+      "locale": "en"
+    },
+    {
+      "languageId": "opensmt",
+      "locale": "en"
+    },
+    {
+      "languageId": "verit",
+      "locale": "en"
+    },
+    {
+      "languageId": "cvc3",
+      "locale": "en"
+    },
+    {
+      "languageId": "yices2",
+      "locale": "en"
+    },
+    {
+      "languageId": "mathsat5",
+      "locale": "en"
+    },
+    {
+      "languageId": "opensmt2",
+      "locale": "en"
+    },
+    {
+      "languageId": "verit2",
+      "locale": "en"
+    },
+    {
+      "languageId": "cvc4l",
+      "locale": "en"
+    },
+    {
+      "languageId": "yicesl",
+      "locale": "en"
+    },
+    {
+      "languageId": "mathsatl",
+      "locale": "en"
+    },
+    {
+      "languageId": "opensmtl",
+      "locale": "en"
+    },
+    {
+      "languageId": "veritl",
+      "locale": "en"
+    },
+    {
+      "languageId": "cvc4s",
+      "locale": "en"
+    },
+    {
+      "languageId": "yicess",
+      "locale": "en"
+    },
+    {
+      "languageId": "mathsats",
+      "locale": "en"
+    },
+    {
+      "languageId": "opensmts",
+      "locale": "en"
+    },
+    {
+      "languageId": "verits",
+      "locale": "en"
+    },
+    {
+      "languageId": "cvc4t",
+      "locale": "en"
+    },
+    {
+      "languageId": "yicest",
+      "locale": "en"
+    },
+    {
+      "languageId": "mathsatt",
+      "locale": "en"
+    },
+    {
+      "languageId": "opensmtt",
+      "locale": "en"
+    },
+    {
+      "languageId": "veritt",
+      "locale": "en"
+    },
+    {
+      "languageId": "cvc4u",
+      "locale": "en"
+    },
+    {
+      "languageId": "yicesu",
+      "locale": "en"
+    },
+    {
+      "languageId": "mathsatu",
+      "locale": "en"
+    },
+    {
+      "languageId": "opensmtu",
+      "locale": "en"
+    },
+    {
+      "languageId": "veritu",
+      "locale": "en"
+    },
+    {
+      "languageId": "cvc4v",
+      "locale": "en"
+    },
+    {
+      "languageId": "yicesv",
+      "locale": "en"
+    },
+    {
+      "languageId": "mathsatv",
+      "locale": "en"
+    },
+    {
+      "languageId": "opensmtv",
+      "locale": "en"
+    },
+    {
+      "languageId": "veritv",
+      "locale": "en"
+    },
+    {
+      "languageId": "cvc4w",
+      "locale": "en"
+    },
+    {
+      "languageId": "yicesw",
+      "locale": "en"
+    },
+    {
+      "languageId": "mathsatw",
+      "locale": "en"
+    },
+    {
+      "languageId": "opensmtw",
+      "locale": "en"
+    },
+    {
+      "languageId": "veritw",
+      "locale": "en"
+    },
+    {
+      "languageId": "cvc4x",
+      "locale": "en"
+    },
+    {
+      "languageId": "yicesx",
+      "locale": "en"
+    },
+    {
+      "languageId": "mathsatx",
+      "locale": "en"
+    },
+    {
+      "languageId": "opensmtx",
+      "locale": "en"
+    },
+    {
+      "languageId": "veritx",
+      "locale": "en"
+    },
+    {
+      "languageId": "cvc4y",
+      "locale": "en"
+    },
+    {
+      "languageId": "yicesy",
+      "locale": "en"
+    },
+    {
+      "languageId": "mathsaty",
+      "locale": "en"
+    },
+    {
+      "languageId": "opensmty",
+      "locale": "en"
+    },
+    {
+      "languageId": "verity",
+      "locale": "en"
+    },
+    {
+      "languageId": "cvc4z",
+      "locale": "en"
+    },
+    {
+      "languageId": "yicesz",
+      "locale": "en"
+    },
+    {
+      "languageId": "mathsatz",
+      "locale": "en"
+    },
+    {
+      "languageId": "opensmtz",
+      "locale": "en"
+    },
+    {
+      "languageId": "veritz",
+      "locale": "en"
+    }
+  ],
+  "overrides": [
+    {
+      "filename": "**/*.js",
+      "languageId": "javascript"
+    },
+    {
+      "filename": "**/*.ts",
+      "languageId": "typescript"
+    },
+    {
+      "filename": "**/*.tsx",
+      "languageId": "typescript"
+    },
+    {
+      "filename": "**/*.jsx",
+      "languageId": "javascript"
+    },
+    {
+      "filename": "**/*.json",
+      "languageId": "json"
+    },
+    {
+      "filename": "**/*.md",
+      "languageId": "markdown"
+    },
+    {
+      "filename": "**/*.html",
+      "languageId": "html"
+    },
+    {
+      "filename": "**/*.css",
+      "languageId": "css"
+    },
+    {
+      "filename": "**/*.scss",
+      "languageId": "scss"
+    },
+    {
+      "filename": "**/*.less",
+      "languageId": "less"
+    },
+    {
+      "filename": "**/*.yaml",
+      "languageId": "yaml"
+    },
+    {
+      "filename": "**/*.yml",
+      "languageId": "yaml"
+    },
+    {
+      "filename": "**/Dockerfile*",
+      "languageId": "dockerfile"
+    },
+    {
+      "filename": "**/*.sh",
+      "languageId": "bash"
+    },
+    {
+      "filename": "**/*.ps1",
+      "languageId": "powershell"
+    },
+    {
+      "filename": "**/*.py",
+      "languageId": "python"
+    },
+    {
+      "filename": "**/*.java",
+      "languageId": "java"
+    },
+    {
+      "filename": "**/*.cs",
+      "languageId": "csharp"
+    },
+    {
+      "filename": "**/*.cpp",
+      "languageId": "cpp"
+    },
+    {
+      "filename": "**/*.c",
+      "languageId": "c"
+    },
+    {
+      "filename": "**/*.go",
+      "languageId": "go"
+    },
+    {
+      "filename": "**/*.rs",
+      "languageId": "rust"
+    },
+    {
+      "filename": "**/*.php",
+      "languageId": "php"
+    },
+    {
+      "filename": "**/*.rb",
+      "languageId": "ruby"
+    },
+    {
+      "filename": "**/*.swift",
+      "languageId": "swift"
+    },
+    {
+      "filename": "**/*.kt",
+      "languageId": "kotlin"
+    },
+    {
+      "filename": "**/*.scala",
+      "languageId": "scala"
+    },
+    {
+      "filename": "**/*.clj",
+      "languageId": "clojure"
+    },
+    {
+      "filename": "**/*.hs",
+      "languageId": "haskell"
+    },
+    {
+      "filename": "**/*.ml",
+      "languageId": "ocaml"
+    },
+    {
+      "filename": "**/*.fs",
+      "languageId": "fsharp"
+    },
+    {
+      "filename": "**/*.elm",
+      "languageId": "elm"
+    },
+    {
+      "filename": "**/*.purs",
+      "languageId": "purescript"
+    },
+    {
+      "filename": "**/*.idr",
+      "languageId": "idris"
+    },
+    {
+      "filename": "**/*.agda",
+      "languageId": "agda"
+    },
+    {
+      "filename": "**/*.v",
+      "languageId": "coq"
+    },
+    {
+      "filename": "**/*.lean",
+      "languageId": "lean"
+    },
+    {
+      "filename": "**/*.thy",
+      "languageId": "isabelle"
+    },
+    {
+      "filename": "**/*.hol",
+      "languageId": "hol"
+    },
+    {
+      "filename": "**/*.acl2",
+      "languageId": "acl2"
+    },
+    {
+      "filename": "**/*.elf",
+      "languageId": "twelf"
+    },
+    {
+      "filename": "**/*.minlog",
+      "languageId": "minlog"
+    },
+    {
+      "filename": "**/*.nuprl",
+      "languageId": "nuprl"
+    },
+    {
+      "filename": "**/*.pvsl",
+      "languageId": "pvsl"
+    },
+    {
+      "filename": "**/*.cvc4",
+      "languageId": "cvc4"
+    },
+    {
+      "filename": "**/*.z3",
+      "languageId": "z3"
+    },
+    {
+      "filename": "**/*.yices",
+      "languageId": "yices"
+    },
+    {
+      "filename": "**/*.cvc5",
+      "languageId": "cvc5"
+    },
+    {
+      "filename": "**/*.boolector",
+      "languageId": "boolector"
+    },
+    {
+      "filename": "**/*.stp",
+      "languageId": "stp"
+    },
+    {
+      "filename": "**/*.mathsat",
+      "languageId": "mathsat"
+    },
+    {
+      "filename": "**/*.opensmt",
+      "languageId": "opensmt"
+    },
+    {
+      "filename": "**/*.verit",
+      "languageId": "verit"
+    },
+    {
+      "filename": "**/*.cvc3",
+      "languageId": "cvc3"
+    },
+    {
+      "filename": "**/*.yices2",
+      "languageId": "yices2"
+    },
+    {
+      "filename": "**/*.mathsat5",
+      "languageId": "mathsat5"
+    },
+    {
+      "filename": "**/*.opensmt2",
+      "languageId": "opensmt2"
+    },
+    {
+      "filename": "**/*.verit2",
+      "languageId": "verit2"
+    },
+    {
+      "filename": "**/*.cvc4l",
+      "languageId": "cvc4l"
+    },
+    {
+      "filename": "**/*.yicesl",
+      "languageId": "yicesl"
+    },
+    {
+      "filename": "**/*.mathsatl",
+      "languageId": "mathsatl"
+    },
+    {
+      "filename": "**/*.opensmtl",
+      "languageId": "opensmtl"
+    },
+    {
+      "filename": "**/*.veritl",
+      "languageId": "veritl"
+    },
+    {
+      "filename": "**/*.cvc4s",
+      "languageId": "cvc4s"
+    },
+    {
+      "filename": "**/*.yicess",
+      "languageId": "yicess"
+    },
+    {
+      "filename": "**/*.mathsats",
+      "languageId": "mathsats"
+    },
+    {
+      "filename": "**/*.opensmts",
+      "languageId": "opensmts"
+    },
+    {
+      "filename": "**/*.verits",
+      "languageId": "verits"
+    },
+    {
+      "filename": "**/*.cvc4t",
+      "languageId": "cvc4t"
+    },
+    {
+      "filename": "**/*.yicest",
+      "languageId": "yicest"
+    },
+    {
+      "filename": "**/*.mathsatt",
+      "languageId": "mathsatt"
+    },
+    {
+      "filename": "**/*.opensmtt",
+      "languageId": "opensmtt"
+    },
+    {
+      "filename": "**/*.veritt",
+      "languageId": "veritt"
+    },
+    {
+      "filename": "**/*.cvc4u",
+      "languageId": "cvc4u"
+    },
+    {
+      "filename": "**/*.yicesu",
+      "languageId": "yicesu"
+    },
+    {
+      "filename": "**/*.mathsatu",
+      "languageId": "mathsatu"
+    },
+    {
+      "filename": "**/*.opensmtu",
+      "languageId": "opensmtu"
+    },
+    {
+      "filename": "**/*.veritu",
+      "languageId": "veritu"
+    },
+    {
+      "filename": "**/*.cvc4v",
+      "languageId": "cvc4v"
+    },
+    {
+      "filename": "**/*.yicesv",
+      "languageId": "yicesv"
+    },
+    {
+      "filename": "**/*.mathsatv",
+      "languageId": "mathsatv"
+    },
+    {
+      "filename": "**/*.opensmtv",
+      "languageId": "opensmtv"
+    },
+    {
+      "filename": "**/*.veritv",
+      "languageId": "veritv"
+    },
+    {
+      "filename": "**/*.cvc4w",
+      "languageId": "cvc4w"
+    },
+    {
+      "filename": "**/*.yicesw",
+      "languageId": "yicesw"
+    },
+    {
+      "filename": "**/*.mathsatw",
+      "languageId": "mathsatw"
+    },
+    {
+      "filename": "**/*.opensmtw",
+      "languageId": "opensmtw"
+    },
+    {
+      "filename": "**/*.veritw",
+      "languageId": "veritw"
+    },
+    {
+      "filename": "**/*.cvc4x",
+      "languageId": "cvc4x"
+    },
+    {
+      "filename": "**/*.yicesx",
+      "languageId": "yicesx"
+    },
+    {
+      "filename": "**/*.mathsatx",
+      "languageId": "mathsatx"
+    },
+    {
+      "filename": "**/*.opensmtx",
+      "languageId": "opensmtx"
+    },
+    {
+      "filename": "**/*.veritx",
+      "languageId": "veritx"
+    },
+    {
+      "filename": "**/*.cvc4y",
+      "languageId": "cvc4y"
+    },
+    {
+      "filename": "**/*.yicesy",
+      "languageId": "yicesy"
+    },
+    {
+      "filename": "**/*.mathsaty",
+      "languageId": "mathsaty"
+    },
+    {
+      "filename": "**/*.opensmty",
+      "languageId": "opensmty"
+    },
+    {
+      "filename": "**/*.verity",
+      "languageId": "verity"
+    },
+    {
+      "filename": "**/*.cvc4z",
+      "languageId": "cvc4z"
+    },
+    {
+      "filename": "**/*.yicesz",
+      "languageId": "yicesz"
+    },
+    {
+      "filename": "**/*.mathsatz",
+      "languageId": "mathsatz"
+    },
+    {
+      "filename": "**/*.opensmtz",
+      "languageId": "opensmtz"
+    },
+    {
+      "filename": "**/*.veritz",
+      "languageId": "veritz"
+    }
+  ]
+}

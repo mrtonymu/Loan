@@ -130,6 +130,14 @@ router.get('/overview', auth, async (req, res) => {
     })).sort((a, b) => a.month.localeCompare(b.month));
     
     res.json({
+      overview: {
+        ...stats,
+        total_paid: parseFloat(repaymentStats.total_paid),
+        overdue_amount: parseFloat(repaymentStats.overdue_amount),
+        overdue_count: parseInt(repaymentStats.overdue_count),
+        roi: Math.round(roi * 100) / 100,
+        statusDistribution: customerStatus
+      },
       stats: {
         ...stats,
         total_paid: parseFloat(repaymentStats.total_paid),

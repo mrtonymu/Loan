@@ -129,16 +129,22 @@ router.get('/me', async (req, res) => {
     
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    const userResult = await pool.query(
-      'SELECT id, username, email, role, full_name, phone, created_at FROM users WHERE id = $1 AND is_active = true',
-      [decoded.id]
-    );
+    const { data: users, error: userError } = await supabase
+      .from('users')
+      .select('id, username, email, role, full_name, phone, created_at')
+      .eq('id', decoded.id)
+      .eq('is_active', true);
     
-    if (userResult.rows.length === 0) {
+    if (userError) {
+      console.error('获取用户信息错误:', userError);
+      return res.status(500).json({ message: '获取用户信息失败' });
+    }
+    
+    if (!users || users.length === 0) {
       return res.status(401).json({ message: '用户不存在' });
     }
     
-    res.json({ user: userResult.rows[0] });
+    res.json({ user: users[0] });
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({ message: '无效的令牌' });
@@ -172,17 +178,22 @@ router.post('/change-password', async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     // 获取用户当前密码
-    const userResult = await pool.query(
-      'SELECT password_hash FROM users WHERE id = $1',
-      [decoded.id]
-    );
+    const { data: users, error: userError } = await supabase
+      .from('users')
+      .select('password_hash')
+      .eq('id', decoded.id);
     
-    if (userResult.rows.length === 0) {
+    if (userError) {
+      console.error('获取用户密码错误:', userError);
+      return res.status(500).json({ message: '修改密码失败' });
+    }
+    
+    if (!users || users.length === 0) {
       return res.status(404).json({ message: '用户不存在' });
     }
     
     // 验证当前密码
-    const isValidPassword = await bcrypt.compare(currentPassword, userResult.rows[0].password_hash);
+    const isValidPassword = await bcrypt.compare(currentPassword, users[0].password_hash);
     if (!isValidPassword) {
       return res.status(400).json({ message: '当前密码错误' });
     }
@@ -192,10 +203,18 @@ router.post('/change-password', async (req, res) => {
     const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
     
     // 更新密码
-    await pool.query(
-      'UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-      [newPasswordHash, decoded.id]
-    );
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ 
+        password_hash: newPasswordHash, 
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', decoded.id);
+    
+    if (updateError) {
+      console.error('更新密码错误:', updateError);
+      return res.status(500).json({ message: '修改密码失败' });
+    }
     
     res.json({ message: '密码修改成功' });
   } catch (error) {
@@ -226,13 +245,17 @@ router.get('/users', async (req, res) => {
       return res.status(403).json({ message: '权限不足' });
     }
     
-    const usersResult = await pool.query(`
-      SELECT id, username, email, role, full_name, phone, is_active, created_at
-      FROM users
-      ORDER BY created_at DESC
-    `);
+    const { data: users, error: usersError } = await supabase
+      .from('users')
+      .select('id, username, email, role, full_name, phone, is_active, created_at')
+      .order('created_at', { ascending: false });
     
-    res.json({ users: usersResult.rows });
+    if (usersError) {
+      console.error('获取用户列表错误:', usersError);
+      return res.status(500).json({ message: '获取用户列表失败' });
+    }
+    
+    res.json({ users: users || [] });
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({ message: '无效的令牌' });
@@ -268,10 +291,18 @@ router.patch('/users/:id/status', async (req, res) => {
       return res.status(400).json({ message: '不能禁用自己的账户' });
     }
     
-    await pool.query(
-      'UPDATE users SET is_active = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-      [is_active, id]
-    );
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ 
+        is_active: is_active, 
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', id);
+    
+    if (updateError) {
+      console.error('更新用户状态错误:', updateError);
+      return res.status(500).json({ message: '更新用户状态失败' });
+    }
     
     res.json({ message: '用户状态更新成功' });
   } catch (error) {

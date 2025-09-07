@@ -6,16 +6,20 @@ const { auth } = require('../middleware/auth_supabase');
 // 获取所有风险标签
 router.get('/', auth, async (req, res) => {
   try {
-    const query = `
-      SELECT * FROM risk_tags 
-      WHERE is_active = true 
-      ORDER BY created_at DESC
-    `;
-    const result = await pool.query(query);
+    const { data: riskTags, error } = await supabase
+      .from('risk_tags')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('获取风险标签错误:', error);
+      return res.status(500).json({ success: false, message: '获取风险标签失败' });
+    }
 
     res.json({
       success: true,
-      data: result.rows
+      data: riskTags || []
     });
   } catch (error) {
     console.error('Error fetching risk tags:', error);
@@ -32,23 +36,33 @@ router.post('/', auth, async (req, res) => {
       return res.status(400).json({ success: false, message: '标签名称不能为空' });
     }
 
-    const query = `
-      INSERT INTO risk_tags (tag_name, tag_color, description)
-      VALUES ($1, $2, $3)
-      RETURNING *
-    `;
+    const { data: riskTag, error } = await supabase
+      .from('risk_tags')
+      .insert([{
+        tag_name,
+        tag_color: tag_color || '#1890ff',
+        description: description || '',
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }])
+      .select()
+      .single();
 
-    const result = await pool.query(query, [tag_name, tag_color, description]);
+    if (error) {
+      if (error.code === '23505') {
+        return res.status(400).json({ success: false, message: '标签名称已存在' });
+      }
+      console.error('创建风险标签错误:', error);
+      return res.status(500).json({ success: false, message: '创建风险标签失败' });
+    }
 
     res.json({
       success: true,
       message: '风险标签创建成功',
-      data: result.rows[0]
+      data: riskTag
     });
   } catch (error) {
-    if (error.code === '23505') {
-      return res.status(400).json({ success: false, message: '标签名称已存在' });
-    }
     console.error('Error creating risk tag:', error);
     res.status(500).json({ success: false, message: '创建风险标签失败' });
   }

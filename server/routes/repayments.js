@@ -11,83 +11,79 @@ router.get('/', auth, async (req, res) => {
     const { page = 1, limit = 10, loan_id, status, overdue_only } = req.query;
     const offset = (page - 1) * limit;
     
-    let query = `
-      SELECT r.*, l.loan_number, c.full_name as customer_name, c.customer_code,
-             CASE 
-               WHEN r.due_date < CURRENT_DATE AND r.status = 'pending' THEN 'overdue'
-               ELSE r.status 
-             END as actual_status
-      FROM repayments r
-      LEFT JOIN loans l ON r.loan_id = l.id
-      LEFT JOIN customers c ON l.customer_id = c.id
-    `;
-    
-    const conditions = [];
-    const params = [];
-    let paramCount = 0;
+    // 构建查询
+    let repaymentQuery = supabase
+      .from('repayments')
+      .select(`
+        *,
+        loans!inner(loan_number, customer_id, customers!inner(full_name, customer_code, assigned_to))
+      `);
     
     // 权限控制
     if (req.user.role === 'employee') {
-      paramCount++;
-      conditions.push(`c.assigned_to = $${paramCount}`);
-      params.push(req.user.id);
+      repaymentQuery = repaymentQuery.eq('loans.customers.assigned_to', req.user.id);
     }
     
     // 贷款筛选
     if (loan_id) {
-      paramCount++;
-      conditions.push(`r.loan_id = $${paramCount}`);
-      params.push(loan_id);
+      repaymentQuery = repaymentQuery.eq('loan_id', loan_id);
     }
     
     // 状态筛选
     if (status) {
-      paramCount++;
       if (status === 'overdue') {
-        conditions.push(`r.due_date < CURRENT_DATE AND r.status = 'pending'`);
+        const today = new Date().toISOString().split('T')[0];
+        repaymentQuery = repaymentQuery
+          .lt('due_date', today)
+          .eq('status', 'pending');
       } else {
-        conditions.push(`r.status = $${paramCount}`);
-        params.push(status);
+        repaymentQuery = repaymentQuery.eq('status', status);
       }
     }
     
     // 只显示逾期
     if (overdue_only === 'true') {
-      conditions.push(`r.due_date < CURRENT_DATE AND r.status = 'pending'`);
+      const today = new Date().toISOString().split('T')[0];
+      repaymentQuery = repaymentQuery
+        .lt('due_date', today)
+        .eq('status', 'pending');
     }
     
-    if (conditions.length > 0) {
-      query += ' WHERE ' + conditions.join(' AND ');
+    // 分页和排序
+    repaymentQuery = repaymentQuery
+      .order('due_date', { ascending: true })
+      .order('repayment_number', { ascending: true })
+      .range(offset, offset + limit - 1);
+    
+    const { data: repayments, error: repaymentError, count: totalCount } = await repaymentQuery;
+    
+    if (repaymentError) {
+      console.error('获取还款记录错误:', repaymentError);
+      return res.status(500).json({ message: '获取还款记录失败' });
     }
     
-    query += `
-      ORDER BY r.due_date ASC, r.repayment_number ASC
-      LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}
-    `;
-    
-    params.push(parseInt(limit), offset);
-    
-    const result = await pool.query(query, params);
-    
-    // 获取总数
-    let countQuery = `
-      SELECT COUNT(*)
-      FROM repayments r
-      LEFT JOIN loans l ON r.loan_id = l.id
-      LEFT JOIN customers c ON l.customer_id = c.id
-    `;
-    if (conditions.length > 0) {
-      countQuery += ' WHERE ' + conditions.join(' AND ');
-    }
-    const countResult = await pool.query(countQuery, params.slice(0, -2));
+    // 计算实际状态（逾期检查）
+    const repaymentsWithStatus = repayments?.map(repayment => {
+      const dueDate = new Date(repayment.due_date);
+      const today = new Date();
+      const actualStatus = dueDate < today && repayment.status === 'pending' ? 'overdue' : repayment.status;
+      
+      return {
+        ...repayment,
+        actual_status: actualStatus,
+        customer_name: repayment.loans?.customers?.full_name,
+        customer_code: repayment.loans?.customers?.customer_code,
+        loan_number: repayment.loans?.loan_number
+      };
+    }) || [];
     
     res.json({
-      repayments: result.rows,
+      repayments: repaymentsWithStatus,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
-        total: parseInt(countResult.rows[0].count),
-        pages: Math.ceil(countResult.rows[0].count / limit)
+        total: totalCount || 0,
+        pages: Math.ceil((totalCount || 0) / parseInt(limit))
       }
     });
   } catch (error) {

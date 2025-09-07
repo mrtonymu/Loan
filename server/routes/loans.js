@@ -10,13 +10,19 @@ const generateLoanNumber = async () => {
   const year = new Date().getFullYear();
   const month = String(new Date().getMonth() + 1).padStart(2, '0');
   
-  const countResult = await pool.query(
-    'SELECT COUNT(*) FROM loans WHERE EXTRACT(YEAR FROM created_at) = $1 AND EXTRACT(MONTH FROM created_at) = $2',
-    [year, month]
-  );
+  const { count, error } = await supabase
+    .from('loans')
+    .select('*', { count: 'exact', head: true })
+    .gte('created_at', `${year}-${month}-01T00:00:00.000Z`)
+    .lt('created_at', `${year}-${month}-31T23:59:59.999Z`);
   
-  const count = parseInt(countResult.rows[0].count) + 1;
-  return `L${year}${month}${String(count).padStart(4, '0')}`;
+  if (error) {
+    console.error('获取贷款数量错误:', error);
+    return `L${year}${month}0001`;
+  }
+  
+  const loanCount = (count || 0) + 1;
+  return `L${year}${month}${String(loanCount).padStart(4, '0')}`;
 };
 
 // 使用新的贷款计算逻辑
@@ -29,86 +35,96 @@ router.get('/', auth, async (req, res) => {
     const { page = 1, limit = 10, status, customer_id, search } = req.query;
     const offset = (page - 1) * limit;
     
-    let query = `
-      SELECT l.*, c.full_name as customer_name, c.customer_code, c.phone as customer_phone,
-             u.full_name as created_by_name,
-             COUNT(r.id) as total_repayments,
-             COALESCE(SUM(CASE WHEN r.status = 'paid' THEN r.paid_amount ELSE 0 END), 0) as total_paid,
-             COALESCE(SUM(CASE WHEN r.status = 'overdue' THEN 1 ELSE 0 END), 0) as overdue_count
-      FROM loans l
-      LEFT JOIN customers c ON l.customer_id = c.id
-      LEFT JOIN users u ON l.created_by = u.id
-      LEFT JOIN repayments r ON l.id = r.loan_id
-    `;
-    
-    const conditions = [];
-    const params = [];
-    let paramCount = 0;
+    // 构建查询
+    let loanQuery = supabase
+      .from('loans')
+      .select(`
+        *,
+        customers!inner(full_name, customer_code, phone, assigned_to),
+        users!created_by(full_name)
+      `);
     
     // 权限控制
     if (req.user.role === 'employee') {
-      paramCount++;
-      conditions.push(`c.assigned_to = $${paramCount}`);
-      params.push(req.user.id);
+      loanQuery = loanQuery.eq('customers.assigned_to', req.user.id);
     }
     
     // 状态筛选
     if (status) {
-      paramCount++;
-      conditions.push(`l.status = $${paramCount}`);
-      params.push(status);
+      loanQuery = loanQuery.eq('status', status);
     }
     
     // 客户筛选
     if (customer_id) {
-      paramCount++;
-      conditions.push(`l.customer_id = $${paramCount}`);
-      params.push(customer_id);
+      loanQuery = loanQuery.eq('customer_id', customer_id);
     }
     
     // 搜索功能
     if (search) {
-      paramCount++;
-      conditions.push(`(
-        l.loan_number ILIKE $${paramCount} OR 
-        c.full_name ILIKE $${paramCount} OR 
-        c.customer_code ILIKE $${paramCount}
-      )`);
-      params.push(`%${search}%`);
+      loanQuery = loanQuery.or(`loan_number.ilike.%${search}%,customers.full_name.ilike.%${search}%,customers.customer_code.ilike.%${search}%`);
     }
     
-    if (conditions.length > 0) {
-      query += ' WHERE ' + conditions.join(' AND ');
+    // 分页和排序
+    loanQuery = loanQuery
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+    
+    const { data: loans, error: loanError, count: totalCount } = await loanQuery;
+    
+    if (loanError) {
+      console.error('获取贷款列表错误:', loanError);
+      return res.status(500).json({ message: '获取贷款列表失败' });
     }
     
-    query += `
-      GROUP BY l.id, c.full_name, c.customer_code, c.phone, u.full_name
-      ORDER BY l.created_at DESC
-      LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}
-    `;
+    // 获取还款统计
+    const loanIds = loans?.map(loan => loan.id) || [];
+    let repaymentStats = {};
     
-    params.push(parseInt(limit), offset);
-    
-    const result = await pool.query(query, params);
-    
-    // 获取总数
-    let countQuery = `
-      SELECT COUNT(DISTINCT l.id)
-      FROM loans l
-      LEFT JOIN customers c ON l.customer_id = c.id
-    `;
-    if (conditions.length > 0) {
-      countQuery += ' WHERE ' + conditions.join(' AND ');
+    if (loanIds.length > 0) {
+      const { data: repayments, error: repaymentError } = await supabase
+        .from('repayments')
+        .select('loan_id, status, paid_amount')
+        .in('loan_id', loanIds);
+      
+      if (!repaymentError && repayments) {
+        repayments.forEach(repayment => {
+          const loanId = repayment.loan_id;
+          if (!repaymentStats[loanId]) {
+            repaymentStats[loanId] = {
+              total_repayments: 0,
+              total_paid: 0,
+              overdue_count: 0
+            };
+          }
+          
+          repaymentStats[loanId].total_repayments++;
+          if (repayment.status === 'paid') {
+            repaymentStats[loanId].total_paid += repayment.paid_amount || 0;
+          }
+          if (repayment.status === 'overdue') {
+            repaymentStats[loanId].overdue_count++;
+          }
+        });
+      }
     }
-    const countResult = await pool.query(countQuery, params.slice(0, -2));
+    
+    // 合并数据
+    const loansWithStats = loans?.map(loan => ({
+      ...loan,
+      customer_name: loan.customers?.full_name,
+      customer_code: loan.customers?.customer_code,
+      customer_phone: loan.customers?.phone,
+      created_by_name: loan.users?.full_name,
+      ...repaymentStats[loan.id]
+    })) || [];
     
     res.json({
-      loans: result.rows,
+      loans: loansWithStats,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
-        total: parseInt(countResult.rows[0].count),
-        pages: Math.ceil(countResult.rows[0].count / limit)
+        total: totalCount || 0,
+        pages: Math.ceil((totalCount || 0) / parseInt(limit))
       }
     });
   } catch (error) {
@@ -122,40 +138,54 @@ router.get('/:id', auth, async (req, res) => {
   try {
     const { id } = req.params;
     
-    const loanResult = await pool.query(`
-      SELECT l.*, c.full_name as customer_name, c.customer_code, c.phone as customer_phone,
-             c.id_number, c.address, u.full_name as created_by_name
-      FROM loans l
-      LEFT JOIN customers c ON l.customer_id = c.id
-      LEFT JOIN users u ON l.created_by = u.id
-      WHERE l.id = $1
-    `, [id]);
+    const { data: loans, error: loanError } = await supabase
+      .from('loans')
+      .select(`
+        *,
+        customers!inner(full_name, customer_code, phone, id_number, address, assigned_to),
+        users!created_by(full_name)
+      `)
+      .eq('id', id)
+      .single();
     
-    if (loanResult.rows.length === 0) {
+    if (loanError) {
+      console.error('获取贷款详情错误:', loanError);
       return res.status(404).json({ message: '贷款不存在' });
     }
     
     // 权限检查
     if (req.user.role === 'employee') {
-      const customerResult = await pool.query(
-        'SELECT assigned_to FROM customers WHERE id = $1',
-        [loanResult.rows[0].customer_id]
-      );
-      if (customerResult.rows[0].assigned_to !== req.user.id) {
+      if (loans.customers.assigned_to !== req.user.id) {
         return res.status(403).json({ message: '无权限访问此贷款' });
       }
     }
     
     // 获取还款记录
-    const repaymentsResult = await pool.query(`
-      SELECT * FROM repayments 
-      WHERE loan_id = $1 
-      ORDER BY repayment_number ASC
-    `, [id]);
+    const { data: repayments, error: repaymentError } = await supabase
+      .from('repayments')
+      .select('*')
+      .eq('loan_id', id)
+      .order('repayment_number', { ascending: true });
+    
+    if (repaymentError) {
+      console.error('获取还款记录错误:', repaymentError);
+      return res.status(500).json({ message: '获取还款记录失败' });
+    }
+    
+    // 格式化数据
+    const loan = {
+      ...loans,
+      customer_name: loans.customers?.full_name,
+      customer_code: loans.customers?.customer_code,
+      customer_phone: loans.customers?.phone,
+      id_number: loans.customers?.id_number,
+      address: loans.customers?.address,
+      created_by_name: loans.users?.full_name
+    };
     
     res.json({
-      loan: loanResult.rows[0],
-      repayments: repaymentsResult.rows
+      loan,
+      repayments: repayments || []
     });
   } catch (error) {
     console.error('获取贷款详情错误:', error);
@@ -165,10 +195,7 @@ router.get('/:id', auth, async (req, res) => {
 
 // 创建新贷款
 router.post('/', auth, validateLoan, async (req, res) => {
-  const client = await pool.connect();
   try {
-    await client.query('BEGIN');
-    
     const {
       customer_id, principal_amount, interest_rate, loan_term_months,
       collateral_description, collateral_value, loan_purpose,
@@ -176,23 +203,34 @@ router.post('/', auth, validateLoan, async (req, res) => {
     } = req.body;
     
     // 验证客户是否存在
-    const customerResult = await client.query('SELECT * FROM customers WHERE id = $1', [customer_id]);
-    if (customerResult.rows.length === 0) {
+    const { data: customers, error: customerError } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('id', customer_id)
+      .single();
+    
+    if (customerError || !customers) {
       return res.status(404).json({ message: '客户不存在' });
     }
     
     // 权限检查
-    if (req.user.role === 'employee' && customerResult.rows[0].assigned_to !== req.user.id) {
+    if (req.user.role === 'employee' && customers.assigned_to !== req.user.id) {
       return res.status(403).json({ message: '无权限为此客户创建贷款' });
     }
     
     // 检查客户是否有未结清的贷款
-    const activeLoanResult = await client.query(
-      'SELECT COUNT(*) FROM loans WHERE customer_id = $1 AND status = $2',
-      [customer_id, 'active']
-    );
+    const { count: activeLoanCount, error: activeLoanError } = await supabase
+      .from('loans')
+      .select('*', { count: 'exact', head: true })
+      .eq('customer_id', customer_id)
+      .eq('status', 'active');
     
-    if (parseInt(activeLoanResult.rows[0].count) > 0) {
+    if (activeLoanError) {
+      console.error('检查活跃贷款错误:', activeLoanError);
+      return res.status(500).json({ message: '创建贷款失败' });
+    }
+    
+    if (activeLoanCount > 0) {
       return res.status(400).json({ message: '客户已有未结清的贷款' });
     }
     
@@ -215,24 +253,41 @@ router.post('/', auth, validateLoan, async (req, res) => {
     maturityDate.setMonth(maturityDate.getMonth() + loan_term_months);
     
     // 创建贷款记录
-    const loanResult = await client.query(`
-      INSERT INTO loans (
-        loan_number, customer_id, principal_amount, interest_rate, loan_term_months,
-        monthly_payment, total_amount, received_amount, collateral_description,
-        collateral_value, loan_purpose, disbursement_date, maturity_date, created_by,
-        loan_method, deposit_amount, upfront_interest, upfront_fees, prepaid_amount
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
-      RETURNING *
-    `, [
-      loanNumber, customer_id, principal_amount, interest_rate, loan_term_months,
-      loanData.monthlyPayment, loanData.totalAmount, loanData.receivedAmount,
-      collateral_description, collateral_value, loan_purpose,
-      disbursementDate.toISOString().split('T')[0],
-      maturityDate.toISOString().split('T')[0],
-      req.user.id, loan_method, deposit_amount, loanData.upfrontInterest, upfront_fees, 0
-    ]);
+    const { data: loan, error: loanError } = await supabase
+      .from('loans')
+      .insert([{
+        loan_number: loanNumber,
+        customer_id: customer_id,
+        principal_amount: principal_amount,
+        interest_rate: interest_rate,
+        loan_term_months: loan_term_months,
+        monthly_payment: loanData.monthlyPayment,
+        total_amount: loanData.totalAmount,
+        received_amount: loanData.receivedAmount,
+        collateral_description: collateral_description,
+        collateral_value: collateral_value,
+        loan_purpose: loan_purpose,
+        disbursement_date: disbursementDate.toISOString().split('T')[0],
+        maturity_date: maturityDate.toISOString().split('T')[0],
+        created_by: req.user.id,
+        loan_method: loan_method,
+        deposit_amount: deposit_amount,
+        upfront_interest: loanData.upfrontInterest,
+        upfront_fees: upfront_fees,
+        prepaid_amount: 0,
+        status: 'active',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }])
+      .select()
+      .single();
     
-    const loanId = loanResult.rows[0].id;
+    if (loanError) {
+      console.error('创建贷款错误:', loanError);
+      return res.status(500).json({ message: '创建贷款失败' });
+    }
+    
+    const loanId = loan.id;
     
     // 生成还款计划
     const repayments = generateRepaymentSchedule({
@@ -242,39 +297,52 @@ router.post('/', auth, validateLoan, async (req, res) => {
     
     // 批量插入还款计划
     if (repayments.length > 0) {
-      const values = repayments.map((repayment, index) => {
-        const offset = index * 7;
-        return `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7})`;
-      }).join(', ');
+      const repaymentData = repayments.map(repayment => ({
+        loan_id: loanId,
+        repayment_number: repayment.repayment_number,
+        due_date: repayment.due_date,
+        principal_amount: repayment.principal_amount,
+        interest_amount: repayment.interest_amount,
+        total_amount: repayment.total_amount,
+        remaining_balance: repayment.remaining_balance,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }));
       
-      const params = repayments.flatMap(repayment => [
-        loanId,
-        repayment.repayment_number,
-        repayment.due_date,
-        repayment.principal_amount,
-        repayment.interest_amount,
-        repayment.total_amount,
-        repayment.remaining_balance
-      ]);
+      const { error: repaymentError } = await supabase
+        .from('repayments')
+        .insert(repaymentData);
       
-      await client.query(`
-        INSERT INTO repayments (loan_id, repayment_number, due_date, principal_amount, interest_amount, total_amount, remaining_balance)
-        VALUES ${values}
-      `, params);
+      if (repaymentError) {
+        console.error('创建还款计划错误:', repaymentError);
+        // 删除已创建的贷款
+        await supabase.from('loans').delete().eq('id', loanId);
+        return res.status(500).json({ message: '创建还款计划失败' });
+      }
     }
     
     // 更新客户的RM金额
-    const newRMAmount = customerResult.rows[0].rm_amount + loanData.totalAmount;
-    await client.query(
-      'UPDATE customers SET rm_amount = $1 WHERE id = $2',
-      [newRMAmount, customer_id]
-    );
+    const newRMAmount = (customers.rm_amount || 0) + loanData.totalAmount;
+    const { error: updateError } = await supabase
+      .from('customers')
+      .update({ 
+        rm_amount: newRMAmount,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', customer_id);
     
-    await client.query('COMMIT');
+    if (updateError) {
+      console.error('更新客户RM金额错误:', updateError);
+      // 删除已创建的贷款和还款计划
+      await supabase.from('repayments').delete().eq('loan_id', loanId);
+      await supabase.from('loans').delete().eq('id', loanId);
+      return res.status(500).json({ message: '更新客户信息失败' });
+    }
     
     res.status(201).json({
       message: '贷款创建成功',
-      loan: loanResult.rows[0],
+      loan: loan,
       loanData: {
         receivedAmount: loanData.receivedAmount,
         targetAmount: loanData.targetAmount,
@@ -283,16 +351,8 @@ router.post('/', auth, validateLoan, async (req, res) => {
       }
     });
   } catch (error) {
-    await client.query('ROLLBACK');
     console.error('创建贷款错误:', error);
-    
-    if (error.code === '23505') { // 唯一约束违反
-      res.status(400).json({ message: '贷款编号已存在' });
-    } else {
-      res.status(500).json({ message: '创建贷款失败' });
-    }
-  } finally {
-    client.release();
+    res.status(500).json({ message: '创建贷款失败' });
   }
 });
 
@@ -309,40 +369,62 @@ router.patch('/:id/status', auth, async (req, res) => {
     }
     
     // 检查贷款是否存在
-    const loanResult = await pool.query('SELECT * FROM loans WHERE id = $1', [id]);
-    if (loanResult.rows.length === 0) {
+    const { data: loan, error: loanError } = await supabase
+      .from('loans')
+      .select('*, customers!inner(assigned_to)')
+      .eq('id', id)
+      .single();
+    
+    if (loanError || !loan) {
       return res.status(404).json({ message: '贷款不存在' });
     }
     
     // 权限检查
     if (req.user.role === 'employee') {
-      const customerResult = await pool.query(
-        'SELECT assigned_to FROM customers WHERE id = $1',
-        [loanResult.rows[0].customer_id]
-      );
-      if (customerResult.rows[0].assigned_to !== req.user.id) {
+      if (loan.customers.assigned_to !== req.user.id) {
         return res.status(403).json({ message: '无权限修改此贷款' });
       }
     }
     
     // 需要审批的操作
     if (['completed', 'defaulted', 'cancelled'].includes(status) && req.user.role === 'employee') {
-      await pool.query(`
-        INSERT INTO approvals (entity_type, entity_id, action, requested_by, comments)
-        VALUES ('loan', $1, 'update', $2, $3)
-      `, [id, req.user.id, `贷款状态修改为${status}需要审批`]);
+      const { error: approvalError } = await supabase
+        .from('approvals')
+        .insert([{
+          entity_type: 'loan',
+          entity_id: id,
+          action: 'update',
+          requested_by: req.user.id,
+          comments: `贷款状态修改为${status}需要审批`,
+          created_at: new Date().toISOString()
+        }]);
+      
+      if (approvalError) {
+        console.error('创建审批请求错误:', approvalError);
+        return res.status(500).json({ message: '提交审批请求失败' });
+      }
       
       return res.status(202).json({ message: '状态修改请求已提交，等待审批' });
     }
     
-    const result = await pool.query(
-      'UPDATE loans SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
-      [status, id]
-    );
+    const { data: updatedLoan, error: updateError } = await supabase
+      .from('loans')
+      .update({ 
+        status: status,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (updateError) {
+      console.error('更新贷款状态错误:', updateError);
+      return res.status(500).json({ message: '更新贷款状态失败' });
+    }
     
     res.json({
       message: '贷款状态更新成功',
-      loan: result.rows[0]
+      loan: updatedLoan
     });
   } catch (error) {
     console.error('更新贷款状态错误:', error);
@@ -353,47 +435,60 @@ router.patch('/:id/status', auth, async (req, res) => {
 // 获取贷款统计
 router.get('/stats/overview', auth, async (req, res) => {
   try {
-    let query = `
-      SELECT 
-        COUNT(*) as total_loans,
-        COALESCE(SUM(principal_amount), 0) as total_principal,
-        COALESCE(SUM(total_amount), 0) as total_amount,
-        COALESCE(SUM(received_amount), 0) as total_received,
-        COUNT(CASE WHEN status = 'active' THEN 1 END) as active_loans,
-        COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_loans,
-        COUNT(CASE WHEN status = 'defaulted' THEN 1 END) as defaulted_loans
-      FROM loans l
-      LEFT JOIN customers c ON l.customer_id = c.id
-    `;
-    
-    const params = [];
-    let paramCount = 0;
+    // 构建贷款查询
+    let loanQuery = supabase
+      .from('loans')
+      .select(`
+        *,
+        customers!inner(assigned_to)
+      `);
     
     // 权限控制
     if (req.user.role === 'employee') {
-      paramCount++;
-      query += ` WHERE c.assigned_to = $${paramCount}`;
-      params.push(req.user.id);
+      loanQuery = loanQuery.eq('customers.assigned_to', req.user.id);
     }
     
-    const result = await pool.query(query, params);
-    const stats = result.rows[0];
+    const { data: loans, error: loanError } = await loanQuery;
+    
+    if (loanError) {
+      console.error('获取贷款统计错误:', loanError);
+      return res.status(500).json({ message: '获取统计信息失败' });
+    }
+    
+    // 计算统计数据
+    const stats = {
+      total_loans: loans?.length || 0,
+      total_principal: loans?.reduce((sum, loan) => sum + (loan.principal_amount || 0), 0) || 0,
+      total_amount: loans?.reduce((sum, loan) => sum + (loan.total_amount || 0), 0) || 0,
+      total_received: loans?.reduce((sum, loan) => sum + (loan.received_amount || 0), 0) || 0,
+      active_loans: loans?.filter(loan => loan.status === 'active').length || 0,
+      completed_loans: loans?.filter(loan => loan.status === 'completed').length || 0,
+      defaulted_loans: loans?.filter(loan => loan.status === 'defaulted').length || 0
+    };
+    
+    // 获取还款统计
+    const loanIds = loans?.map(loan => loan.id) || [];
+    let totalPaid = 0;
+    
+    if (loanIds.length > 0) {
+      const { data: repayments, error: repaymentError } = await supabase
+        .from('repayments')
+        .select('paid_amount')
+        .eq('status', 'paid')
+        .in('loan_id', loanIds);
+      
+      if (!repaymentError && repayments) {
+        totalPaid = repayments.reduce((sum, repayment) => sum + (repayment.paid_amount || 0), 0);
+      }
+    }
     
     // 计算ROI
-    const totalPaid = await pool.query(`
-      SELECT COALESCE(SUM(paid_amount), 0) as total_paid
-      FROM repayments r
-      LEFT JOIN loans l ON r.loan_id = l.id
-      LEFT JOIN customers c ON l.customer_id = c.id
-      WHERE r.status = 'paid'${req.user.role === 'employee' ? ' AND c.assigned_to = $1' : ''}
-    `, req.user.role === 'employee' ? [req.user.id] : []);
-    
     const roi = stats.total_principal > 0 ? 
-      ((parseFloat(totalPaid.rows[0].total_paid) - parseFloat(stats.total_principal)) / parseFloat(stats.total_principal) * 100) : 0;
+      ((totalPaid - stats.total_principal) / stats.total_principal * 100) : 0;
     
     res.json({
       ...stats,
-      total_paid: parseFloat(totalPaid.rows[0].total_paid),
+      total_paid: totalPaid,
       roi: Math.round(roi * 100) / 100
     });
   } catch (error) {
