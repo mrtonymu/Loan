@@ -47,7 +47,7 @@ fi
 echo "🎯 启动应用..."
 echo "📱 前端地址: http://localhost:3000"
 echo "🔧 后端API: http://localhost:5000"
-echo "👤 默认账户: admin / admin123"
+echo "👤 默认账户: admin / password"
 echo ""
 echo "按 Ctrl+C 停止服务"
 echo ""

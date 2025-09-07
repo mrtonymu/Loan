@@ -7,12 +7,12 @@ const customerSchema = Joi.object({
     'string.min': '姓名至少2个字符',
     'string.max': '姓名不能超过100个字符'
   }),
-  id_number: Joi.string().pattern(/^[0-9X]{18}$/).required().messages({
-    'string.pattern.base': '身份证号格式不正确',
+  id_number: Joi.string().pattern(/^\d{12}$/).required().messages({
+    'string.pattern.base': '马来西亚身份证号格式不正确（应为12位数字）',
     'string.empty': '身份证号不能为空'
   }),
-  phone: Joi.string().pattern(/^1[3-9]\d{9}$/).required().messages({
-    'string.pattern.base': '手机号格式不正确',
+  phone: Joi.string().pattern(/^(\+60|0)?[1-9]\d{7,8}$/).required().messages({
+    'string.pattern.base': '马来西亚手机号格式不正确（支持+60或0开头的格式）',
     'string.empty': '手机号不能为空'
   }),
   address: Joi.string().max(500).allow('').messages({
@@ -21,8 +21,8 @@ const customerSchema = Joi.object({
   emergency_contact: Joi.string().max(100).allow('').messages({
     'string.max': '紧急联系人不能超过100个字符'
   }),
-  emergency_phone: Joi.string().pattern(/^1[3-9]\d{9}$/).allow('').messages({
-    'string.pattern.base': '紧急联系人手机号格式不正确'
+  emergency_phone: Joi.string().pattern(/^(\+60|0)?[1-9]\d{7,8}$/).allow('').messages({
+    'string.pattern.base': '紧急联系人手机号格式不正确（支持+60或0开头的格式）'
   }),
   assigned_to: Joi.number().integer().positive().allow(null),
   notes: Joi.string().max(1000).allow('').messages({
@@ -107,8 +107,8 @@ const userSchema = Joi.object({
     'string.max': '姓名不能超过100个字符',
     'any.required': '姓名不能为空'
   }),
-  phone: Joi.string().pattern(/^1[3-9]\d{9}$/).allow('').messages({
-    'string.pattern.base': '手机号格式不正确'
+  phone: Joi.string().pattern(/^(\+60|0)?[1-9]\d{7,8}$/).allow('').messages({
+    'string.pattern.base': '马来西亚手机号格式不正确（支持+60或0开头的格式）'
   })
 });
 
