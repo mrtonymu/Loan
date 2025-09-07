@@ -1,7 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../config/database');
-const { auth } = require('../middleware/auth');
+const { createClient } = require('@supabase/supabase-js');
+const { auth } = require('../middleware/auth_supabase');
+
+// 初始化 Supabase 客户端
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 const { validateCustomer } = require('../middleware/validation');
 const { 
   requirePermission, 

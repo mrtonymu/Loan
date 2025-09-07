@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../config/database');
-const { auth } = require('../middleware/auth');
+const supabase = require('../config/supabase');
+const { auth } = require('../middleware/auth_supabase');
 const { validateLoan } = require('../middleware/validation');
 const { calculateLoanAmounts, generateRepaymentSchedule } = require('../utils/loanCalculator');
 

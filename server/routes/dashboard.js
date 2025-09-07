@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../config/database');
-const { auth } = require('../middleware/auth');
+const supabase = require('../config/supabase');
+const { auth } = require('../middleware/auth_supabase');
 
 // 获取Dashboard概览数据
 router.get('/overview', auth, async (req, res) => {
@@ -9,97 +9,125 @@ router.get('/overview', auth, async (req, res) => {
     const { period = 'month' } = req.query; // month, quarter, year
     
     // 计算时间范围
-    let dateFilter = '';
-    const params = [];
-    let paramCount = 0;
+    let startDate;
+    const now = new Date();
     
     if (period === 'month') {
-      paramCount++;
-      dateFilter = `AND l.created_at >= CURRENT_DATE - INTERVAL '1 month'`;
+      startDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
     } else if (period === 'quarter') {
-      paramCount++;
-      dateFilter = `AND l.created_at >= CURRENT_DATE - INTERVAL '3 months'`;
+      startDate = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
     } else if (period === 'year') {
-      paramCount++;
-      dateFilter = `AND l.created_at >= CURRENT_DATE - INTERVAL '1 year'`;
+      startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
     }
     
     // 权限控制
-    let permissionFilter = '';
+    let customerQuery = supabase.from('customers').select('*');
     if (req.user.role === 'employee') {
-      paramCount++;
-      permissionFilter = `AND c.assigned_to = $${paramCount}`;
-      params.push(req.user.id);
+      customerQuery = customerQuery.eq('assigned_to', req.user.id);
     }
     
-    // 基础统计
-    const statsQuery = `
-      SELECT 
-        COUNT(DISTINCT c.id) as total_customers,
-        COUNT(DISTINCT l.id) as total_loans,
-        COALESCE(SUM(l.principal_amount), 0) as total_principal,
-        COALESCE(SUM(l.total_amount), 0) as total_amount,
-        COALESCE(SUM(l.received_amount), 0) as total_received,
-        COUNT(CASE WHEN l.status = 'active' THEN 1 END) as active_loans,
-        COUNT(CASE WHEN l.status = 'completed' THEN 1 END) as completed_loans,
-        COUNT(CASE WHEN l.status = 'defaulted' THEN 1 END) as defaulted_loans
-      FROM customers c
-      LEFT JOIN loans l ON c.id = l.customer_id ${dateFilter}
-      WHERE 1=1 ${permissionFilter}
-    `;
+    // 获取客户数据
+    const { data: customers, error: customerError } = await customerQuery;
+    if (customerError) {
+      console.error('获取客户数据错误:', customerError);
+      return res.status(500).json({ message: '获取数据失败' });
+    }
     
-    const statsResult = await pool.query(statsQuery, params);
-    const stats = statsResult.rows[0];
+    // 获取贷款数据
+    let loanQuery = supabase.from('loans').select('*');
+    if (startDate) {
+      loanQuery = loanQuery.gte('created_at', startDate.toISOString());
+    }
+    
+    const { data: loans, error: loanError } = await loanQuery;
+    if (loanError) {
+      console.error('获取贷款数据错误:', loanError);
+      return res.status(500).json({ message: '获取数据失败' });
+    }
+    
+    // 计算统计数据
+    const stats = {
+      total_customers: customers?.length || 0,
+      total_loans: loans?.length || 0,
+      total_principal: loans?.reduce((sum, loan) => sum + (loan.principal_amount || 0), 0) || 0,
+      total_amount: loans?.reduce((sum, loan) => sum + (loan.total_amount || 0), 0) || 0,
+      total_received: loans?.reduce((sum, loan) => sum + (loan.received_amount || 0), 0) || 0,
+      active_loans: loans?.filter(loan => loan.status === 'active').length || 0,
+      completed_loans: loans?.filter(loan => loan.status === 'completed').length || 0,
+      defaulted_loans: loans?.filter(loan => loan.status === 'defaulted').length || 0
+    };
     
     // 客户状态分布
-    const customerStatusQuery = `
-      SELECT 
-        status,
-        COUNT(*) as count
-      FROM customers c
-      WHERE 1=1 ${permissionFilter}
-      GROUP BY status
-    `;
-    
-    const customerStatusResult = await pool.query(customerStatusQuery, params.slice(0, -1));
     const customerStatus = {};
-    customerStatusResult.rows.forEach(row => {
-      customerStatus[row.status] = parseInt(row.count);
-    });
+    if (customers) {
+      customers.forEach(customer => {
+        const status = customer.status || 'normal';
+        customerStatus[status] = (customerStatus[status] || 0) + 1;
+      });
+    }
     
-    // 还款统计
-    const repaymentQuery = `
-      SELECT 
-        COALESCE(SUM(CASE WHEN r.status = 'paid' THEN r.paid_amount ELSE 0 END), 0) as total_paid,
-        COALESCE(SUM(CASE WHEN r.due_date < CURRENT_DATE AND r.status = 'pending' THEN r.total_amount - r.paid_amount ELSE 0 END), 0) as overdue_amount,
-        COUNT(CASE WHEN r.due_date < CURRENT_DATE AND r.status = 'pending' THEN 1 END) as overdue_count
-      FROM repayments r
-      LEFT JOIN loans l ON r.loan_id = l.id
-      LEFT JOIN customers c ON l.customer_id = c.id
-      WHERE 1=1 ${permissionFilter}
-    `;
+    // 获取还款数据
+    const { data: repayments, error: repaymentError } = await supabase
+      .from('repayments')
+      .select('*');
     
-    const repaymentResult = await pool.query(repaymentQuery, params.slice(0, -1));
-    const repaymentStats = repaymentResult.rows[0];
+    if (repaymentError) {
+      console.error('获取还款数据错误:', repaymentError);
+      return res.status(500).json({ message: '获取数据失败' });
+    }
+    
+    // 计算还款统计
+    const repaymentStats = {
+      total_paid: repayments?.filter(r => r.status === 'paid')
+        .reduce((sum, r) => sum + (r.paid_amount || 0), 0) || 0,
+      overdue_amount: repayments?.filter(r => {
+        const dueDate = new Date(r.due_date);
+        const today = new Date();
+        return dueDate < today && r.status === 'pending';
+      }).reduce((sum, r) => sum + ((r.total_amount || 0) - (r.paid_amount || 0)), 0) || 0,
+      overdue_count: repayments?.filter(r => {
+        const dueDate = new Date(r.due_date);
+        const today = new Date();
+        return dueDate < today && r.status === 'pending';
+      }).length || 0
+    };
     
     // 计算ROI
     const roi = stats.total_principal > 0 ? 
-      ((parseFloat(repaymentStats.total_paid) - parseFloat(stats.total_principal)) / parseFloat(stats.total_principal) * 100) : 0;
+      ((repaymentStats.total_paid - stats.total_principal) / stats.total_principal * 100) : 0;
     
     // 月度趋势数据
-    const trendQuery = `
-      SELECT 
-        DATE_TRUNC('month', l.created_at) as month,
-        COUNT(l.id) as loan_count,
-        COALESCE(SUM(l.principal_amount), 0) as loan_amount
-      FROM loans l
-      LEFT JOIN customers c ON l.customer_id = c.id
-      WHERE l.created_at >= CURRENT_DATE - INTERVAL '12 months' ${permissionFilter}
-      GROUP BY DATE_TRUNC('month', l.created_at)
-      ORDER BY month
-    `;
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
     
-    const trendResult = await pool.query(trendQuery, params.slice(0, -1));
+    const { data: trendLoans, error: trendError } = await supabase
+      .from('loans')
+      .select('*')
+      .gte('created_at', twelveMonthsAgo.toISOString());
+    
+    if (trendError) {
+      console.error('获取趋势数据错误:', trendError);
+      return res.status(500).json({ message: '获取数据失败' });
+    }
+    
+    // 按月份分组趋势数据
+    const trends = {};
+    if (trendLoans) {
+      trendLoans.forEach(loan => {
+        const month = new Date(loan.created_at).toISOString().substring(0, 7); // YYYY-MM
+        if (!trends[month]) {
+          trends[month] = { loan_count: 0, loan_amount: 0 };
+        }
+        trends[month].loan_count++;
+        trends[month].loan_amount += loan.principal_amount || 0;
+      });
+    }
+    
+    const trendResult = Object.entries(trends).map(([month, data]) => ({
+      month: month + '-01T00:00:00.000Z',
+      loan_count: data.loan_count,
+      loan_amount: data.loan_amount
+    })).sort((a, b) => a.month.localeCompare(b.month));
     
     res.json({
       stats: {
@@ -110,8 +138,8 @@ router.get('/overview', auth, async (req, res) => {
         roi: Math.round(roi * 100) / 100
       },
       customerStatus,
-      trends: trendResult.rows.map(row => ({
-        month: row.month.toISOString().split('T')[0],
+      trends: trendResult.map(row => ({
+        month: row.month.split('T')[0],
         loan_count: parseInt(row.loan_count),
         loan_amount: parseFloat(row.loan_amount)
       }))

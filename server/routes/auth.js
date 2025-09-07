@@ -2,24 +2,26 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const pool = require('../config/database');
+const supabase = require('../config/supabase');
 const { validateUser } = require('../middleware/validation');
 
 // 注册
 router.post('/register', validateUser, async (req, res) => {
-  const client = await pool.connect();
   try {
-    await client.query('BEGIN');
-    
     const { username, email, password, role, full_name, phone } = req.body;
     
     // 检查用户名和邮箱是否已存在
-    const existingUser = await client.query(
-      'SELECT id FROM users WHERE username = $1 OR email = $2',
-      [username, email]
-    );
+    const { data: existingUsers, error: checkError } = await supabase
+      .from('users')
+      .select('id')
+      .or(`username.eq.${username},email.eq.${email}`);
     
-    if (existingUser.rows.length > 0) {
+    if (checkError) {
+      console.error('检查用户存在性错误:', checkError);
+      return res.status(500).json({ message: '注册失败' });
+    }
+    
+    if (existingUsers && existingUsers.length > 0) {
       return res.status(400).json({ message: '用户名或邮箱已存在' });
     }
     
@@ -28,24 +30,33 @@ router.post('/register', validateUser, async (req, res) => {
     const passwordHash = await bcrypt.hash(password, saltRounds);
     
     // 创建用户
-    const result = await client.query(`
-      INSERT INTO users (username, email, password_hash, role, full_name, phone)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING id, username, email, role, full_name, phone, created_at
-    `, [username, email, passwordHash, role, full_name, phone]);
+    const { data: user, error: insertError } = await supabase
+      .from('users')
+      .insert([{
+        username,
+        email,
+        password_hash: passwordHash,
+        role,
+        full_name,
+        phone,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }])
+      .select('id, username, email, role, full_name, phone, created_at')
+      .single();
     
-    await client.query('COMMIT');
+    if (insertError) {
+      console.error('创建用户错误:', insertError);
+      return res.status(500).json({ message: '注册失败' });
+    }
     
     res.status(201).json({
       message: '用户注册成功',
-      user: result.rows[0]
+      user: user
     });
   } catch (error) {
-    await client.query('ROLLBACK');
     console.error('注册错误:', error);
     res.status(500).json({ message: '注册失败' });
-  } finally {
-    client.release();
   }
 });
 
@@ -59,16 +70,22 @@ router.post('/login', async (req, res) => {
     }
     
     // 查找用户
-    const userResult = await pool.query(
-      'SELECT * FROM users WHERE username = $1 AND is_active = true',
-      [username]
-    );
+    const { data: users, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('username', username)
+      .eq('is_active', true);
     
-    if (userResult.rows.length === 0) {
+    if (userError) {
+      console.error('查找用户错误:', userError);
+      return res.status(500).json({ message: '登录失败' });
+    }
+    
+    if (!users || users.length === 0) {
       return res.status(401).json({ message: '用户名或密码错误' });
     }
     
-    const user = userResult.rows[0];
+    const user = users[0];
     
     // 验证密码
     const isValidPassword = await bcrypt.compare(password, user.password_hash);

@@ -5,7 +5,7 @@ const path = require('path');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth_supabase');
-const customerRoutes = require('./routes/customers');
+const customerRoutes = require('./routes/customers_supabase');
 const loanRoutes = require('./routes/loans');
 const repaymentRoutes = require('./routes/repayments');
 const dashboardRoutes = require('./routes/dashboard_supabase');
